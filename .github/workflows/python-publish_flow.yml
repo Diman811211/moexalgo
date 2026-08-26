@@ -10,6 +10,11 @@ name: Upload Python Package
 
 on:
   workflow_dispatch:
+    inputs:
+      target_ref:
+        description: Git tag to build and publish (for example, v2.5.11)
+        required: true
+        type: string
   release:
     types: [published]
 
@@ -23,6 +28,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+      with:
+        ref: ${{ inputs.target_ref || github.ref }}
     - name: Set up Python
       uses: actions/setup-python@v3
       with:
@@ -34,7 +41,7 @@ jobs:
     - name: Build package
       run: python -m build
     - name: Publish package
-      uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
+      uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
       with:
         user: __token__
         password: ${{ secrets.PYPI_API_SECRET }}
