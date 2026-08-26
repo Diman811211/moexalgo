@@ -1,3 +1,9 @@
+# 2.5.11
+
+- Добавлена автоматическая поддержка сертификата НУЦ Минцифры 
+- https://www.moex.com/kak-sohranit-dostup-k-servisam-birzhi
+- https://www.gosuslugi.ru/crt
+
 # 2.5.10
 
 - Исправлена ошибка неправильным рассчетом offset после 50k строк

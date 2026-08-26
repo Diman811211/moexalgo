@@ -6,6 +6,7 @@ from typing import Callable, Optional, Union
 
 import httpx
 
+from moexalgo._tls import create_moex_ssl_context
 from moexalgo.utils import json
 
 BASE_URL = "https://iss.moex.com/iss"
@@ -95,6 +96,10 @@ class BaseClient(HasOptions):
         assert sync, "AsyncClient not supported in this version"
         options.update(follow_redirects=True, headers=[("User-Agent", "python-httpx/moexalgo")])
         super().__init__(**options)
+        if "verify" not in self.options:
+            trust_env = self.options.get("trust_env", True)
+            ssl_context = create_moex_ssl_context(trust_env=trust_env)
+            self.options["verify"] = ssl_context
         self.httpx_cli = httpx.Client(**self.options) if sync else httpx.AsyncClient(**self.options)
 
     @property

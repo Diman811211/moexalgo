@@ -33,6 +33,7 @@ API
    :maxdepth: 1
 
    auth
+   tls
    market
    ticker
 
