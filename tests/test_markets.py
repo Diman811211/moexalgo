@@ -13,9 +13,7 @@ def test_market():
     assert len(eq.tickers()) > 50
     assert len(eq.marketdata()) > 50
 
-    it = eq.tradestats(date="2024-01-05")
-    assert isinstance(next(it), object)
-    data = list(it)
+    data = eq.tradestats(date="2024-01-05")
     assert len(data) > 10000
 
     assert len(eq.trades()) > 10

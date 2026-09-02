@@ -82,4 +82,5 @@ def candles(data, minutes: int):
                 start, finish = next(intervals)
         if start <= begin and end <= finish:
             accum.append(candle)
-    yield make_candle(start, finish)
+    if intervals is not None:
+        yield make_candle(start, finish)

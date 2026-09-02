@@ -12,9 +12,7 @@ def test_market():
 
     assert len(moex.info())
 
-    it = moex.tradestats(start="2024-01-05", end="2024-02-05")
-    assert isinstance(next(it), object)
-    data = list(it)
+    data = moex.tradestats(start="2024-01-05", end="2024-02-05")
     assert len(data) > 500
 
 

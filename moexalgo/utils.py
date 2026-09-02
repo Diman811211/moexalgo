@@ -24,6 +24,7 @@ class CandlePeriod(Enum):
     ONE_DAY = 24
     ONE_WEEK = 7
     ONE_MONTH = 31
+    ONE_QUARTER = 4
 
 
 class Desc(NamedTuple):
@@ -53,6 +54,8 @@ def normalize_period(period: CandlePeriod | int | str) -> int:
             interval = CandlePeriod.ONE_WEEK.value
         elif period == 31:
             interval = CandlePeriod.ONE_MONTH.value
+        elif period == 4:
+            interval = CandlePeriod.ONE_QUARTER.value
         else:
             raise ValueError("Некорректное значение параметра `period`")
 

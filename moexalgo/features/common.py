@@ -1,4 +1,5 @@
 from datetime import date
+from itertools import islice
 from typing import Any, Iterable
 
 from moexalgo.session import Session
@@ -13,6 +14,15 @@ from moexalgo.utils import (
 )
 
 type DataFrame = Any
+
+CANDLE_PAGE_SIZE = 10_000
+RESAMPLE_SOURCE_MINUTES = {
+    1: 1,
+    10: 10,
+    60: 60,
+    24: 24 * 60,
+    7: 7 * 24 * 60,
+}
 
 
 class CommonMarket:
@@ -175,7 +185,8 @@ class CommonTicker:
         period:
             Период свечи, возможны следующие строковые значения: '1min', '5min', '10min', '15min', '20min',
             '30min', '1h', '2h', '3h', '6h', '12h', '1D', '5D', '10D', '1W', '2W', '4W', '1M'; и числовые:
-            1 (1 минута), 10 (10 минут), 60 (1 час), 24 (1 день), 7 (1 неделя), 31 (1 месяц).
+            1 (1 минута), 10 (10 минут), 60 (1 час), 24 (1 день), 7 (1 неделя), 31 (1 месяц),
+            4 (1 квартал).
         offset :
             Начальная позиция в последовательности записей, by default 0.
         latest :
@@ -190,11 +201,16 @@ class CommonTicker:
             interval, resample_to, period = resample.normalize_period(period)
         from_date, till_date = prepare_from_till_dates(start, end)
         options = {"from": from_date, "till": till_date, "interval": interval}
-        offset, limit = calc_offset_limit(offset, 10_000)
+        result_offset, result_limit = calc_offset_limit(offset, CANDLE_PAGE_SIZE)
+        source_offset = result_offset
+        source_limit: int | None = result_limit
+        if resample_to is not None:
+            source_offset = 0
+            source_limit = None
         if latest:
             options["iss.reverse"] = True
-            limit = 1
-        options = dict(options, offset=offset, limit=limit)
+            source_limit = resample_to // RESAMPLE_SOURCE_MINUTES[interval] if resample_to is not None else 1
+        options = dict(options, offset=source_offset, limit=source_limit)
         candles = fetch_section(
             self.market.engine,
             self.market.market,
@@ -203,7 +219,16 @@ class CommonTicker:
             "candles",
             **options,
         )
-        return result_adapter(resample.candles(candles, resample_to) if resample_to is not None else candles, native)
+        if resample_to is not None:
+            if latest:
+                source_candles = list(candles)
+                source_candles.reverse()
+                resampled_candles = list(resample.candles(source_candles, resample_to))
+                candles = iter(resampled_candles[-1:])
+            else:
+                candles = resample.candles(candles, resample_to)
+                candles = islice(candles, result_offset, result_offset + result_limit)
+        return result_adapter(candles, native)
 
     def trades(
         self,
@@ -258,7 +283,7 @@ def fetch_section(
     secid: str,
     section: str,
     *,
-    limit: int,
+    limit: int | None,
     offset: int = 0,
     **options: Any,
 ) -> Iterable[dict[str, Any]]:
@@ -276,6 +301,8 @@ def fetch_section(
                 for item in data:
                     yield item
                     start += 1
-                if (start - offset) < limit and limit > 0:
+                    if limit is not None and limit > 0 and (start - offset) >= limit:
+                        return
+                if limit is None or limit > 0:
                     continue
             break
